@@ -1,0 +1,11 @@
+App(
+    appid="twenty_one_questions",
+    name="21 Questions",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="twenty_one_questions_app",
+    stack_size=4 * 1024,
+    fap_category="Games",
+    fap_version="1.0",
+    fap_author="Ryan",
+    fap_description="Think of an object and let Flipper guess it",
+)
