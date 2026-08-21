@@ -1,6 +1,6 @@
 # 21 Questions for Flipper Zero
 
-Think of one of the included objects. Flipper asks adaptive Yes/No/Not Sure questions and tries to guess it.
+Think of one of the included objects. Flipper asks exactly 21 adaptive Yes/No/Not Sure questions, then makes its best guess. It scores every possible object at the end, so conflicting answers cannot leave it without an answer.
 
 ## Controls
 
