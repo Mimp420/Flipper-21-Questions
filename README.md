@@ -1,6 +1,6 @@
 # 21 Questions for Flipper Zero
 
-Think of one of the included objects. Flipper asks adaptive Yes/No/Not Sure questions and tries to guess it.
+Think of one of the included objects. Flipper asks exactly 21 adaptive Yes/No/Not Sure questions, then makes its best guess. It scores every possible object at the end, so conflicting answers cannot leave it without an answer.
 
 ## Controls
 
@@ -24,4 +24,4 @@ The workflow uses Node.js 24-compatible GitHub Actions versions to avoid the Nod
 
 ## Current starter database
 
-The included build contains 30 objects and 15 adaptive questions. Add more objects by assigning combinations of the trait flags in `twenty_one_questions.c`.
+The included build contains 30 objects and 21 adaptive questions. Add more objects by assigning combinations of the trait flags in `twenty_one_questions.c`.
