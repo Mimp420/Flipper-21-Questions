@@ -35,6 +35,12 @@ enum {
     T_TOOL = 1u << 12,
     T_ROUND = 1u << 13,
     T_NATURE = 1u << 14,
+    T_METAL = 1u << 15,
+    T_NEEDS_POWER = 1u << 16,
+    T_WHEELS = 1u << 17,
+    T_MAKES_SOUND = 1u << 18,
+    T_KITCHEN = 1u << 19,
+    T_ENTERTAINMENT = 1u << 20,
 };
 
 static const char* questions[] = {
@@ -42,7 +48,9 @@ static const char* questions[] = {
     "Is it electronic?", "Usually found indoors?", "Can you hold it?",
     "Is it a vehicle?", "Used in or on water?", "Can it fly?",
     "Bigger than a person?", "Can you wear it?", "Is it a tool?",
-    "Is it mostly round?", "Found in nature?",
+    "Is it mostly round?", "Found in nature?", "Is it made of metal?",
+    "Does it need power?", "Does it have wheels?", "Can it make sound?",
+    "Used in a kitchen?", "Used for entertainment?",
 };
 
 #define B(...) (__VA_ARGS__)
@@ -58,24 +66,24 @@ static const Thing things[] = {
     {"apple", B(T_FOOD|T_HANDHELD|T_ROUND|T_NATURE)},
     {"pizza", B(T_FOOD|T_HANDHELD|T_ROUND)},
     {"hamburger", B(T_FOOD|T_HANDHELD)},
-    {"phone", B(T_ELECTRONIC|T_INDOORS|T_HANDHELD|T_TOOL)},
-    {"computer", B(T_ELECTRONIC|T_INDOORS|T_TOOL)},
-    {"television", B(T_ELECTRONIC|T_INDOORS)},
-    {"camera", B(T_ELECTRONIC|T_HANDHELD|T_TOOL)},
-    {"car", B(T_VEHICLE|T_BIGGER_PERSON)},
-    {"bicycle", B(T_VEHICLE|T_BIGGER_PERSON|T_TOOL)},
-    {"airplane", B(T_VEHICLE|T_FLY|T_BIGGER_PERSON)},
-    {"boat", B(T_VEHICLE|T_WATER|T_BIGGER_PERSON)},
-    {"hammer", B(T_INDOORS|T_HANDHELD|T_TOOL)},
-    {"scissors", B(T_INDOORS|T_HANDHELD|T_TOOL)},
-    {"watch", B(T_ELECTRONIC|T_HANDHELD|T_WEARABLE|T_TOOL|T_ROUND)},
+    {"phone", B(T_ELECTRONIC|T_INDOORS|T_HANDHELD|T_TOOL|T_NEEDS_POWER|T_MAKES_SOUND|T_ENTERTAINMENT)},
+    {"computer", B(T_ELECTRONIC|T_INDOORS|T_TOOL|T_NEEDS_POWER|T_MAKES_SOUND|T_ENTERTAINMENT)},
+    {"television", B(T_ELECTRONIC|T_INDOORS|T_NEEDS_POWER|T_MAKES_SOUND|T_ENTERTAINMENT)},
+    {"camera", B(T_ELECTRONIC|T_HANDHELD|T_TOOL|T_NEEDS_POWER|T_ENTERTAINMENT)},
+    {"car", B(T_VEHICLE|T_BIGGER_PERSON|T_METAL|T_NEEDS_POWER|T_WHEELS|T_MAKES_SOUND)},
+    {"bicycle", B(T_VEHICLE|T_BIGGER_PERSON|T_TOOL|T_METAL|T_WHEELS)},
+    {"airplane", B(T_VEHICLE|T_FLY|T_BIGGER_PERSON|T_METAL|T_NEEDS_POWER|T_WHEELS|T_MAKES_SOUND)},
+    {"boat", B(T_VEHICLE|T_WATER|T_BIGGER_PERSON|T_METAL|T_NEEDS_POWER|T_MAKES_SOUND)},
+    {"hammer", B(T_INDOORS|T_HANDHELD|T_TOOL|T_METAL)},
+    {"scissors", B(T_INDOORS|T_HANDHELD|T_TOOL|T_METAL|T_KITCHEN)},
+    {"watch", B(T_ELECTRONIC|T_HANDHELD|T_WEARABLE|T_TOOL|T_ROUND|T_METAL|T_NEEDS_POWER)},
     {"hat", B(T_INDOORS|T_HANDHELD|T_WEARABLE)},
     {"shoe", B(T_INDOORS|T_HANDHELD|T_WEARABLE)},
-    {"ball", B(T_INDOORS|T_HANDHELD|T_ROUND)},
+    {"ball", B(T_INDOORS|T_HANDHELD|T_ROUND|T_ENTERTAINMENT)},
     {"moon", B(T_BIGGER_PERSON|T_ROUND|T_NATURE)},
     {"mountain", B(T_BIGGER_PERSON|T_NATURE)},
-    {"key", B(T_INDOORS|T_HANDHELD|T_TOOL)},
-    {"book", B(T_INDOORS|T_HANDHELD)},
+    {"key", B(T_INDOORS|T_HANDHELD|T_TOOL|T_METAL)},
+    {"book", B(T_INDOORS|T_HANDHELD|T_ENTERTAINMENT)},
     {"chair", B(T_INDOORS|T_TOOL)},
 };
 
@@ -87,6 +95,8 @@ typedef struct {
     GameScreen screen;
     bool active[ARRAY_COUNT(things)];
     uint32_t asked_traits;
+    uint32_t yes_traits;
+    uint32_t no_traits;
     uint8_t question_number;
     int8_t current_trait;
     int16_t guess_index;
@@ -98,11 +108,6 @@ static uint8_t active_count(Game* game) {
     uint8_t count = 0;
     for(size_t i = 0; i < ARRAY_COUNT(things); i++) count += game->active[i];
     return count;
-}
-
-static int16_t first_active(Game* game) {
-    for(size_t i = 0; i < ARRAY_COUNT(things); i++) if(game->active[i]) return (int16_t)i;
-    return -1;
 }
 
 static int8_t choose_question(Game* game) {
@@ -120,12 +125,25 @@ static int8_t choose_question(Game* game) {
         uint8_t diff = yes > no ? yes - no : no - yes;
         if(diff < best_diff) { best_diff = diff; best = (int8_t)trait; }
     }
+    if(best < 0) {
+        for(size_t trait = 0; trait < ARRAY_COUNT(questions); trait++) {
+            if(!(game->asked_traits & (1u << trait))) return (int8_t)trait;
+        }
+    }
     return best;
+}
+
+static uint8_t bit_count(uint32_t value) {
+    uint8_t count = 0;
+    while(value) { count += value & 1u; value >>= 1; }
+    return count;
 }
 
 static void start_game(Game* game) {
     for(size_t i = 0; i < ARRAY_COUNT(things); i++) game->active[i] = true;
     game->asked_traits = 0;
+    game->yes_traits = 0;
+    game->no_traits = 0;
     game->question_number = 1;
     game->current_trait = choose_question(game);
     game->guess_index = -1;
@@ -134,7 +152,17 @@ static void start_game(Game* game) {
 }
 
 static void make_guess(Game* game) {
-    game->guess_index = first_active(game);
+    uint8_t best_errors = 255;
+    game->guess_index = 0;
+    for(size_t i = 0; i < ARRAY_COUNT(things); i++) {
+        uint32_t yes_errors = game->yes_traits & ~things[i].traits;
+        uint32_t no_errors = game->no_traits & things[i].traits;
+        uint8_t errors = bit_count(yes_errors) + bit_count(no_errors);
+        if(errors < best_errors) {
+            best_errors = errors;
+            game->guess_index = (int16_t)i;
+        }
+    }
     game->screen = ScreenGuess;
 }
 
@@ -142,6 +170,8 @@ static void answer_question(Game* game, int8_t answer) {
     if(game->current_trait < 0) { make_guess(game); return; }
     uint32_t bit = 1u << game->current_trait;
     game->asked_traits |= bit;
+    if(answer > 0) game->yes_traits |= bit;
+    else if(answer < 0) game->no_traits |= bit;
     if(answer != 0) {
         for(size_t i = 0; i < ARRAY_COUNT(things); i++) {
             if(!game->active[i]) continue;
@@ -149,12 +179,11 @@ static void answer_question(Game* game, int8_t answer) {
             if((answer > 0 && !has) || (answer < 0 && has)) game->active[i] = false;
         }
     }
-    if(active_count(game) <= 1 || game->question_number >= MAX_QUESTIONS) {
+    if(game->question_number >= MAX_QUESTIONS) {
         make_guess(game);
     } else {
         game->question_number++;
         game->current_trait = choose_question(game);
-        if(game->current_trait < 0) make_guess(game);
     }
 }
 
