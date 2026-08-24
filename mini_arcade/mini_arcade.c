@@ -275,7 +275,7 @@ static void handle_reaction(Arcade* app, InputKey key) {
         app->reaction_state = 0;
         set_message(app, "Too soon! Try again");
     } else if(app->reaction_state == 2 && key == InputKeyOk) {
-        uint32_t ms = furi_ticks_to_ms(now - app->reaction_ready_at);
+        uint32_t ms = (now - app->reaction_ready_at) / furi_ms_to_ticks(1);
         snprintf(app->message, sizeof(app->message), "%lu ms - OK retry", (unsigned long)ms);
         app->reaction_state = 0;
     }
