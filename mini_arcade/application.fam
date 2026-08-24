@@ -1,0 +1,11 @@
+App(
+    appid="mini_arcade",
+    name="Mini Arcade",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="mini_arcade_app",
+    stack_size=6 * 1024,
+    fap_category="Games",
+    fap_version="1.0",
+    fap_author="Ryan",
+    fap_description="Five pocket games for Flipper Zero",
+)

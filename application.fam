@@ -8,4 +8,5 @@ App(
     fap_version="1.0",
     fap_author="Ryan",
     fap_description="Think of an object and let Flipper guess it",
+    sources=["twenty_one_questions.c"],
 )
