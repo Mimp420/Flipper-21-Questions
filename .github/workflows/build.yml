@@ -21,6 +21,8 @@ jobs:
             artifact: twenty-one-questions-fap
           - directory: mini_arcade
             artifact: mini-arcade-fap
+          - directory: pocket_russell
+            artifact: pocket-russell-fap
 
     steps:
       - name: Check out repository
